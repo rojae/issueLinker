@@ -4,11 +4,13 @@ import com.github.rojae.issuelinker.browser.IssueBrowserToolWindowFactory
 import com.github.rojae.issuelinker.settings.IssueLinkerSettings
 import com.github.rojae.issuelinker.util.BranchParserUtil
 import com.github.rojae.issuelinker.util.UrlBuilderUtil
+import com.github.rojae.issuelinker.widgets.IssueLinkerWidgetFactory
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.wm.WindowManager
 import com.intellij.ui.jcef.JBCefApp
 import git4idea.repo.GitRepository
 import git4idea.repo.GitRepositoryChangeListener
@@ -48,6 +50,13 @@ class IssueLinkerService(private val project: Project) : Disposable {
             currentIssueKey = null
             currentCapturedGroups = null
         }
+        // Update widget after service state is updated
+        updateWidget()
+    }
+
+    private fun updateWidget() {
+        val statusBar = WindowManager.getInstance().getStatusBar(project) ?: return
+        statusBar.updateWidget(IssueLinkerWidgetFactory.WIDGET_ID)
     }
 
     private fun getCurrentBranchName(): String? {

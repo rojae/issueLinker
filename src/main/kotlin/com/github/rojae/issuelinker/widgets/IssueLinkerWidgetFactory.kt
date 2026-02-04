@@ -8,8 +8,6 @@ import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.util.Consumer
-import git4idea.repo.GitRepository
-import git4idea.repo.GitRepositoryChangeListener
 import java.awt.Component
 import java.awt.event.MouseEvent
 
@@ -31,7 +29,6 @@ class IssueLinkerWidget(private val project: Project) :
     StatusBarWidget, StatusBarWidget.TextPresentation, Disposable {
 
     private var statusBar: StatusBar? = null
-    private val connection = project.messageBus.connect(this)
 
     override fun ID(): String = IssueLinkerWidgetFactory.WIDGET_ID
 
@@ -39,11 +36,7 @@ class IssueLinkerWidget(private val project: Project) :
 
     override fun install(statusBar: StatusBar) {
         this.statusBar = statusBar
-        // Subscribe to Git branch changes to update widget
-        connection.subscribe(
-            GitRepository.GIT_REPO_CHANGE,
-            GitRepositoryChangeListener { statusBar.updateWidget(ID()) },
-        )
+        // Widget updates are triggered by IssueLinkerService after branch change
     }
 
     override fun dispose() {
