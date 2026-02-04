@@ -26,10 +26,10 @@ object BranchParserUtil {
                 val groups = matchResult.groupValues.drop(1)
                 groups
             }
-        } catch (e: PatternSyntaxException) {
+        } catch (_: PatternSyntaxException) {
             // Invalid regex pattern
             null
-        } catch (e: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             // Kotlin Regex throws IllegalArgumentException for invalid patterns
             null
         }

@@ -83,7 +83,7 @@ class IssueLinkerConfigurable : Configurable {
         return try {
             Regex(regex)
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }

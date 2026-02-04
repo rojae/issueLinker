@@ -193,7 +193,11 @@ GitHub Secrets에 `PUBLISH_TOKEN`으로 JetBrains Marketplace 토큰 추가 후:
 
 ## 라이선스
 
-이 프로젝트는 MIT 라이선스로 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+이 프로젝트는 **MIT License with Commons Clause**로 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+
+- ✅ 무료 사용 (회사/기업 내부 사용 포함)
+- ✅ 개인 용도의 수정 가능
+- ❌ 소프트웨어 또는 수정본의 상업적 판매 금지
 
 ## 감사의 글
 

@@ -35,10 +35,6 @@
         <applicationService
             serviceImplementation="com.github.rojae.issuelinker.settings.IssueLinkerSettings"/>
 
-        <!-- Project-level service -->
-        <projectService
-            serviceImplementation="com.github.rojae.issuelinker.services.IssueLinkerService"/>
-
         <!-- Status bar widget -->
         <statusBarWidgetFactory
             id="IssueLinkerWidget"

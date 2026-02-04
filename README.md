@@ -193,7 +193,11 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License with Commons Clause** - see the [LICENSE](LICENSE) file for details.
+
+- ✅ Free to use (including commercial/enterprise use)
+- ✅ Free to modify for personal use
+- ❌ Cannot sell the software or modified versions
 
 ## Acknowledgments
 

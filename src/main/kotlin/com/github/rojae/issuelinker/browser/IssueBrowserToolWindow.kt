@@ -46,15 +46,9 @@ class IssueBrowserToolWindowFactory : ToolWindowFactory, DumbAware {
 
             ApplicationManager.getApplication().invokeLater {
                 val toolWindowManager = ToolWindowManager.getInstance(project)
-                var toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_ID)
+                val toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_ID)
 
                 // If tool window doesn't exist (shouldn't happen if plugin.xml is correct)
-                if (toolWindow == null) {
-                    // Fallback to external browser
-                    com.intellij.ide.BrowserUtil.browse(url)
-                    return@invokeLater
-                }
-
                 if (toolWindow == null) {
                     // Fallback to external browser
                     com.intellij.ide.BrowserUtil.browse(url)
