@@ -23,11 +23,30 @@
 
 ## 데모
 
+<img src="docs/demo.gif" width="640" alt="IssueLinker Demo">
+
 ```
 브랜치: feature/PROJ-123-add-user-login
            ↓ (정규식으로 PROJ-123 추출)
 열기: https://jira.company.com/browse/PROJ-123
 ```
+
+## 스크린샷
+
+### 설정 화면
+이슈 트래커 URL과 브랜치 파싱 정규식을 설정합니다.
+
+<img src="docs/settings.png" width="600" alt="Settings">
+
+### 상태 바 위젯
+IDE 상태 바에서 현재 이슈 키를 확인할 수 있습니다.
+
+<img src="docs/widget.png" width="400" alt="Status Bar Widget">
+
+### 이슈 브라우저
+IntelliJ 내장 브라우저에서 이슈를 확인합니다.
+
+<img src="docs/browser.png" width="500" alt="Issue Browser">
 
 ## 설치 방법
 

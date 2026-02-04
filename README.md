@@ -23,11 +23,30 @@ Parse issue keys from branch names using configurable regex patterns and open th
 
 ## Demo
 
+<img src="docs/demo.gif" width="640" alt="IssueLinker Demo">
+
 ```
 Branch: feature/PROJ-123-add-user-login
            ↓ (regex extracts PROJ-123)
 Opens: https://jira.company.com/browse/PROJ-123
 ```
+
+## Screenshots
+
+### Settings
+Configure your issue tracker URL and branch parsing regex.
+
+<img src="docs/settings.png" width="600" alt="Settings">
+
+### Status Bar Widget
+See your current issue key in the IDE status bar.
+
+<img src="docs/widget.png" width="400" alt="Status Bar Widget">
+
+### Issue Browser
+View issues in IntelliJ's built-in browser.
+
+<img src="docs/browser.png" width="500" alt="Issue Browser">
 
 ## Installation
 
