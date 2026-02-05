@@ -1,7 +1,33 @@
+# macOS
 .DS_Store
-.gradle
-.idea
-.intellijPlatform
-.kotlin
-.qodana
-build
+
+# Gradle
+.gradle/
+build/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# IntelliJ Platform Plugin
+.intellijPlatform/
+.kotlin/
+.qodana/
+
+# OMC (oh-my-claudecode)
+.omc/
+
+# Local environment
+.env
+.env.local
+*.local
+
+# Logs
+*.log
+logs/
+
+# IDE run configurations (optional - remove if you want to share)
+# .run/

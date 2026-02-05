@@ -1,15 +1,79 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.github.rojae.issuelinker</id>
-    <name>issueLinker</name>
+    <name>IssueLinker</name>
     <vendor>rojae</vendor>
+    <description><![CDATA[
+        Link Git branches to issue trackers. Parse issue keys from branch names and open them in your browser with a keyboard shortcut.
+        <br/><br/>
+        <b>Features:</b>
+        <ul>
+            <li>Configurable regex for branch name parsing</li>
+            <li>Customizable issue tracker URL pattern</li>
+            <li>Keyboard shortcut: Cmd+Alt+J (Mac) / Ctrl+Alt+J (Windows/Linux)</li>
+            <li>Status bar widget showing current issue key</li>
+        </ul>
+    ]]></description>
 
+    <!-- Platform dependency -->
     <depends>com.intellij.modules.platform</depends>
 
-    <resource-bundle>messages.MyBundle</resource-bundle>
+    <!-- Git4Idea dependency for Git repository access -->
+    <depends>Git4Idea</depends>
+
+    <resource-bundle>messages.IssueLinkerBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.rojae.issuelinker.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.rojae.issuelinker.startup.MyProjectActivity" />
+        <!-- Settings: Settings > Tools > IssueLinker -->
+        <applicationConfigurable
+            parentId="tools"
+            instance="com.github.rojae.issuelinker.settings.IssueLinkerConfigurable"
+            id="com.github.rojae.issuelinker.settings.IssueLinkerConfigurable"
+            displayName="IssueLinker"/>
+
+        <!-- Application-level settings persistence -->
+        <applicationService
+            serviceImplementation="com.github.rojae.issuelinker.settings.IssueLinkerSettings"/>
+
+        <!-- Status bar widget -->
+        <statusBarWidgetFactory
+            id="IssueLinkerWidget"
+            implementation="com.github.rojae.issuelinker.widgets.IssueLinkerWidgetFactory"/>
+
+        <!-- Notification group -->
+        <notificationGroup
+            id="IssueLinker"
+            displayType="BALLOON"/>
+
+        <!-- Internal browser tool window -->
+        <toolWindow
+            id="Issue Browser"
+            anchor="bottom"
+            secondary="true"
+            canCloseContents="true"
+            factoryClass="com.github.rojae.issuelinker.browser.IssueBrowserToolWindowFactory"
+            icon="AllIcons.General.Web"/>
     </extensions>
+
+    <actions>
+        <!-- Open Issue Action: Cmd+Alt+J (Mac) / Ctrl+Alt+J (Windows/Linux) -->
+        <action
+            id="IssueLinker.OpenIssue"
+            class="com.github.rojae.issuelinker.actions.OpenIssueAction"
+            text="Open Issue in Browser"
+            description="Opens the linked issue from the current branch in browser">
+            <keyboard-shortcut
+                keymap="$default"
+                first-keystroke="ctrl alt J"/>
+            <keyboard-shortcut
+                keymap="Mac OS X"
+                first-keystroke="meta alt J"/>
+            <keyboard-shortcut
+                keymap="Mac OS X 10.5+"
+                first-keystroke="meta alt J"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
+    </actions>
 </idea-plugin>
