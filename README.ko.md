@@ -1,8 +1,9 @@
 # IssueLinker
 
 [![Build](https://github.com/rojae/issueLinker/workflows/Build/badge.svg)](https://github.com/rojae/issueLinker/actions)
-[![Version](https://img.shields.io/jetbrains/plugin/v/MARKETPLACE_ID.svg)](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/MARKETPLACE_ID.svg)](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID)
+[![Version](https://img.shields.io/jetbrains/plugin/v/30083.svg)](https://plugins.jetbrains.com/plugin/30083)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/30083.svg)](https://plugins.jetbrains.com/plugin/30083)
+[![Get from Marketplace](https://img.shields.io/badge/Get_from-JetBrains_Marketplace-blue?logo=jetbrains)](https://plugins.jetbrains.com/plugin/30083)
 
 [English](README.md)
 
