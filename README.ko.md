@@ -18,6 +18,8 @@
 - **자동 이슈 감지** - 설정 가능한 정규식으로 Git 브랜치 이름에서 이슈 키 추출
 - **원클릭 접근** - 단축키 `Cmd+Alt+J` (Mac) / `Ctrl+Alt+J` (Windows/Linux)로 이슈 페이지 열기
 - **상태 바 위젯** - IDE 하단 상태 바에서 현재 이슈 키 확인
+- **빠른 팝업 패널** - 위젯 클릭으로 복사/열기 액션에 즉시 접근
+- **도구 창 패널** - 이슈 번호가 탭 제목에 표시되는 사이드 패널
 - **내부 브라우저** - IDE를 벗어나지 않고 IntelliJ 내장 브라우저에서 이슈 확인
 - **유연한 설정** - 커스텀 URL 패턴으로 모든 이슈 트래커 지원
 - **다중 캡처 그룹** - 정규식 그룹으로 브랜치 이름에서 여러 값 추출 가능
@@ -43,6 +45,16 @@
 IDE 상태 바에서 현재 이슈 키를 확인할 수 있습니다.
 
 <img src="docs/widget.png" width="400" alt="Status Bar Widget">
+
+### 빠른 팝업 패널
+위젯을 클릭하면 모든 액션에 바로 접근할 수 있습니다.
+
+<img src="docs/quick.png" width="250" alt="Quick Popup Panel">
+
+### 도구 창 패널
+View → Tool Windows → IssueLinker에서 패널을 열 수 있습니다.
+
+<img src="docs/pannel.png" width="300" alt="Tool Window Panel">
 
 ### 이슈 브라우저
 IntelliJ 내장 브라우저에서 이슈를 확인합니다.
@@ -133,7 +145,7 @@ Branch Regex: ([a-z]+)/([A-Z]+-\d+)
 | Windows/Linux | `Ctrl + Alt + J` |
 
 ### 상태 바 위젯
-IDE 하단 우측 상태 바에 표시되는 이슈 키를 클릭하면 해당 이슈 페이지가 열립니다.
+IDE 하단 상태 바의 이슈 키를 클릭하면 모든 액션이 포함된 빠른 팝업 패널이 열립니다.
 
 ### 컨텍스트 메뉴
 에디터 또는 프로젝트 뷰에서 우클릭 후 **Open Issue in Browser** 선택

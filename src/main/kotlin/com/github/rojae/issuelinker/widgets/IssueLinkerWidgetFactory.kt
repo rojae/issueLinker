@@ -1,7 +1,9 @@
 package com.github.rojae.issuelinker.widgets
 
 import com.github.rojae.issuelinker.IssueLinkerBundle
+import com.github.rojae.issuelinker.services.IssueLinkerNotifier
 import com.github.rojae.issuelinker.services.IssueLinkerService
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
@@ -42,15 +44,26 @@ class IssueLinkerWidgetFactory : StatusBarWidgetFactory {
     override fun createWidget(project: Project): StatusBarWidget = IssueLinkerWidget(project)
 }
 
-class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget {
+class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, Disposable {
 
     private var statusBar: StatusBar? = null
     private val label = JBLabel()
+    private val connection = project.messageBus.connect(this)
 
     init {
         label.border = JBUI.Borders.empty(0, 4)
         label.toolTipText = IssueLinkerBundle.message("widget.tooltip")
         updateLabel()
+
+        // Subscribe to issue key changes
+        connection.subscribe(
+            IssueLinkerNotifier.TOPIC,
+            object : IssueLinkerNotifier {
+                override fun issueKeyChanged(issueKey: String?) {
+                    updateLabel()
+                }
+            },
+        )
 
         // Click - show popup panel
         label.addMouseListener(
@@ -63,11 +76,13 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget {
     }
 
     private fun showPopupPanel(e: MouseEvent) {
+        val service = project.getService(IssueLinkerService::class.java)
+        val issueKey = service?.issueKey ?: "No Issue"
         val popupContent = createPopupContent()
         val popup =
             JBPopupFactory.getInstance()
                 .createComponentPopupBuilder(popupContent, null)
-                .setTitle("IssueLinker")
+                .setTitle(issueKey)
                 .setMovable(false)
                 .setResizable(false)
                 .setRequestFocus(true)
@@ -233,6 +248,7 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget {
     }
 
     override fun dispose() {
+        connection.disconnect()
         statusBar = null
     }
 

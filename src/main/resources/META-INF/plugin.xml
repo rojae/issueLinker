@@ -61,6 +61,10 @@
             secondary="true"
             factoryClass="com.github.rojae.issuelinker.toolwindow.IssueLinkerToolWindowFactory"
             icon="AllIcons.Vcs.Branch"/>
+
+        <!-- Startup activity to initialize service after project load -->
+        <postStartupActivity
+            implementation="com.github.rojae.issuelinker.startup.IssueLinkerStartupActivity"/>
     </extensions>
 
     <actions>

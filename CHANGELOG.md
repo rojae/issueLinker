@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - IssueLinker Tool Window (View → Tool Windows → IssueLinker)
   - Persistent side panel with all actions
   - Current issue display with status
+  - Tab shows issue key (e.g., PROJ-123)
   - Refresh button for manual update
 - Menu items are disabled when no issue is detected
 

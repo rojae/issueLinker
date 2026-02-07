@@ -1,10 +1,13 @@
 package com.github.rojae.issuelinker.toolwindow
 
+import com.github.rojae.issuelinker.services.IssueLinkerNotifier
 import com.github.rojae.issuelinker.services.IssueLinkerService
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBLabel
@@ -28,24 +31,53 @@ import javax.swing.JSeparator
 class IssueLinkerToolWindowFactory : ToolWindowFactory, DumbAware {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val panel = IssueLinkerToolWindowPanel(project)
+        val panel = IssueLinkerToolWindowPanel(project, toolWindow)
         val content = ContentFactory.getInstance().createContent(panel, "", false)
         toolWindow.contentManager.addContent(content)
+
+        // Set initial stripe title to issue key
+        updateStripeTitle(project, toolWindow)
     }
 
     override fun shouldBeAvailable(project: Project): Boolean = true
+
+    companion object {
+        fun updateStripeTitle(project: Project, toolWindow: ToolWindow) {
+            val service = project.getService(IssueLinkerService::class.java)
+            val issueKey = service?.issueKey
+            toolWindow.stripeTitle = issueKey ?: "No Issue"
+        }
+    }
 }
 
-class IssueLinkerToolWindowPanel(private val project: Project) :
-    JBPanel<JBPanel<*>>(BorderLayout()) {
+class IssueLinkerToolWindowPanel(private val project: Project, private val toolWindow: ToolWindow) :
+    JBPanel<JBPanel<*>>(BorderLayout()), Disposable {
 
     private val issueKeyLabel = JBLabel()
     private val statusLabel = JBLabel()
+    private val connection = project.messageBus.connect(this)
 
     init {
         border = JBUI.Borders.empty(12)
         buildUI()
         refresh()
+
+        // Subscribe to issue key changes
+        connection.subscribe(
+            IssueLinkerNotifier.TOPIC,
+            object : IssueLinkerNotifier {
+                override fun issueKeyChanged(issueKey: String?) {
+                    refresh()
+                }
+            },
+        )
+
+        // Register for disposal with the tool window
+        Disposer.register(toolWindow.disposable, this)
+    }
+
+    override fun dispose() {
+        connection.disconnect()
     }
 
     private fun buildUI() {
@@ -163,6 +195,9 @@ class IssueLinkerToolWindowPanel(private val project: Project) :
             issueKeyLabel.text = "No Issue"
             statusLabel.text = "Switch to a branch with an issue key"
         }
+
+        // Update tool window tab title
+        toolWindow.stripeTitle = issueKey ?: "No Issue"
     }
 
     private fun copyIssueKey() {
