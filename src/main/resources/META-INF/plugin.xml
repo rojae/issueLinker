@@ -53,6 +53,18 @@
             canCloseContents="true"
             factoryClass="com.github.rojae.issuelinker.browser.IssueBrowserToolWindowFactory"
             icon="AllIcons.General.Web"/>
+
+        <!-- IssueLinker tool window -->
+        <toolWindow
+            id="IssueLinker"
+            anchor="right"
+            secondary="true"
+            factoryClass="com.github.rojae.issuelinker.toolwindow.IssueLinkerToolWindowFactory"
+            icon="AllIcons.Vcs.Branch"/>
+
+        <!-- Startup activity to initialize service after project load -->
+        <postStartupActivity
+            implementation="com.github.rojae.issuelinker.startup.IssueLinkerStartupActivity"/>
     </extensions>
 
     <actions>

@@ -18,6 +18,8 @@ Parse issue keys from branch names using configurable regex patterns and open th
 - **Automatic Issue Detection** - Extracts issue keys from Git branch names using configurable regex
 - **One-Click Access** - Open linked issues with keyboard shortcut `Cmd+Alt+J` (Mac) / `Ctrl+Alt+J` (Windows/Linux)
 - **Status Bar Widget** - Always see your current issue key in the IDE status bar
+- **Quick Popup Panel** - Click the widget for instant access to copy/open actions
+- **Tool Window Panel** - Persistent side panel with issue key displayed in tab title
 - **Internal Browser** - View issues in IntelliJ's built-in browser without leaving the IDE
 - **Flexible Configuration** - Support for any issue tracker with customizable URL patterns
 - **Multiple Capture Groups** - Extract multiple values from branch names using regex groups
@@ -43,6 +45,16 @@ Configure your issue tracker URL and branch parsing regex.
 See your current issue key in the IDE status bar.
 
 <img src="docs/widget.png" width="400" alt="Status Bar Widget">
+
+### Quick Popup Panel
+Click the widget to access all actions instantly.
+
+<img src="docs/quick.png" width="250" alt="Quick Popup Panel">
+
+### Tool Window Panel
+Open the IssueLinker panel from View → Tool Windows → IssueLinker.
+
+<img src="docs/pannel.png" width="300" alt="Tool Window Panel">
 
 ### Issue Browser
 View issues in IntelliJ's built-in browser.
@@ -133,7 +145,7 @@ Branch: feature/PROJ-123 → Opens: https://tracker.company.com/project/feature/
 | Windows/Linux | `Ctrl + Alt + J` |
 
 ### Status Bar Widget
-Click the issue key displayed in the bottom-right status bar to open the linked issue.
+Click the issue key in the status bar to open a quick popup panel with all actions.
 
 ### Context Menu
 Right-click in the editor or project view and select **Open Issue in Browser**.
