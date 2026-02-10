@@ -4,14 +4,27 @@
     <name>IssueLinker</name>
     <vendor>rojae</vendor>
     <description><![CDATA[
-        Link Git branches to issue trackers. Parse issue keys from branch names and open them in your browser with a keyboard shortcut.
+        Link Git branches to issue trackers. Parse issue keys from branch names and interact with them via keyboard shortcuts.
         <br/><br/>
         <b>Features:</b>
         <ul>
             <li>Configurable regex for branch name parsing</li>
             <li>Customizable issue tracker URL pattern</li>
-            <li>Keyboard shortcut: Cmd+Alt+J (Mac) / Ctrl+Alt+J (Windows/Linux)</li>
-            <li>Status bar widget showing current issue key</li>
+            <li>Status bar widget showing current issue key with click popup</li>
+            <li>IssueLinker tool window panel</li>
+            <li>Internal JCEF browser for viewing issues</li>
+        </ul>
+        <br/>
+        <b>Keyboard Shortcuts (Mac / Windows·Linux):</b>
+        <ul>
+            <li>Cmd+Alt+J / Ctrl+Alt+J — Open Issue in Browser</li>
+            <li>Cmd+Alt+K / Ctrl+Alt+K — Copy Issue Key</li>
+            <li>Cmd+Alt+U / Ctrl+Alt+U — Copy Issue Link</li>
+            <li>Cmd+Alt+M / Ctrl+Alt+M — Copy Issue as Markdown</li>
+            <li>Cmd+Alt+Shift+J / Ctrl+Alt+Shift+J — Open IssueLinker Panel</li>
+            <li>Cmd+Alt+B / Ctrl+Alt+B — Copy Branch Link</li>
+            <li>Cmd+Alt+Shift+M / Ctrl+Alt+Shift+M — Copy Branch as Markdown</li>
+            <li>Cmd+Alt+Shift+B / Ctrl+Alt+Shift+B — Open Branch Link</li>
         </ul>
     ]]></description>
 
@@ -68,24 +81,150 @@
     </extensions>
 
     <actions>
-        <!-- Open Issue Action: Cmd+Alt+J (Mac) / Ctrl+Alt+J (Windows/Linux) -->
-        <action
-            id="IssueLinker.OpenIssue"
-            class="com.github.rojae.issuelinker.actions.OpenIssueAction"
-            text="Open Issue in Browser"
-            description="Opens the linked issue from the current branch in browser">
-            <keyboard-shortcut
-                keymap="$default"
-                first-keystroke="ctrl alt J"/>
-            <keyboard-shortcut
-                keymap="Mac OS X"
-                first-keystroke="meta alt J"/>
-            <keyboard-shortcut
-                keymap="Mac OS X 10.5+"
-                first-keystroke="meta alt J"/>
+        <group id="IssueLinker.ActionGroup" text="IssueLinker" popup="true">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
-        </action>
+
+            <!-- Open Issue in Browser: Cmd+Alt+J (Mac) / Ctrl+Alt+J (Windows/Linux) -->
+            <action
+                id="IssueLinker.OpenIssue"
+                class="com.github.rojae.issuelinker.actions.OpenIssueAction"
+                text="Open Issue in Browser"
+                description="Opens the linked issue from the current branch in browser">
+                <keyboard-shortcut
+                    keymap="$default"
+                    first-keystroke="ctrl alt J"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X"
+                    first-keystroke="meta alt J"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X 10.5+"
+                    first-keystroke="meta alt J"/>
+            </action>
+
+            <!-- Copy Issue Key: Cmd+Alt+K (Mac) / Ctrl+Alt+K (Windows/Linux) -->
+            <action
+                id="IssueLinker.CopyIssueKey"
+                class="com.github.rojae.issuelinker.actions.CopyIssueKeyAction"
+                text="Copy Issue Key"
+                description="Copy the current issue key to clipboard">
+                <keyboard-shortcut
+                    keymap="$default"
+                    first-keystroke="ctrl alt K"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X"
+                    first-keystroke="meta alt K"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X 10.5+"
+                    first-keystroke="meta alt K"/>
+            </action>
+
+            <!-- Copy Issue Link: Cmd+Alt+U (Mac) / Ctrl+Alt+U (Windows/Linux) -->
+            <action
+                id="IssueLinker.CopyIssueLink"
+                class="com.github.rojae.issuelinker.actions.CopyIssueLinkAction"
+                text="Copy Issue Link"
+                description="Copy the issue tracker link to clipboard">
+                <keyboard-shortcut
+                    keymap="$default"
+                    first-keystroke="ctrl alt U"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X"
+                    first-keystroke="meta alt U"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X 10.5+"
+                    first-keystroke="meta alt U"/>
+            </action>
+
+            <!-- Copy as Markdown: Cmd+Alt+M (Mac) / Ctrl+Alt+M (Windows/Linux) -->
+            <action
+                id="IssueLinker.CopyAsMarkdown"
+                class="com.github.rojae.issuelinker.actions.CopyAsMarkdownAction"
+                text="Copy Issue as Markdown"
+                description="Copy the issue key and link as Markdown format">
+                <keyboard-shortcut
+                    keymap="$default"
+                    first-keystroke="ctrl alt M"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X"
+                    first-keystroke="meta alt M"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X 10.5+"
+                    first-keystroke="meta alt M"/>
+            </action>
+
+            <separator/>
+
+            <!-- Open IssueLinker Panel: Cmd+Alt+Shift+J (Mac) / Ctrl+Alt+Shift+J (Windows/Linux) -->
+            <action
+                id="IssueLinker.OpenToolWindow"
+                class="com.github.rojae.issuelinker.actions.OpenToolWindowAction"
+                text="Open IssueLinker Panel"
+                description="Open the IssueLinker tool window panel">
+                <keyboard-shortcut
+                    keymap="$default"
+                    first-keystroke="ctrl alt shift J"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X"
+                    first-keystroke="meta alt shift J"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X 10.5+"
+                    first-keystroke="meta alt shift J"/>
+            </action>
+
+            <separator/>
+
+            <!-- Copy Branch Link: Cmd+Alt+B (Mac) / Ctrl+Alt+B (Windows/Linux) -->
+            <action
+                id="IssueLinker.CopyBranchLink"
+                class="com.github.rojae.issuelinker.actions.CopyBranchLinkAction"
+                text="Copy Branch Link"
+                description="Copy the current Git branch link on remote">
+                <keyboard-shortcut
+                    keymap="$default"
+                    first-keystroke="ctrl alt B"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X"
+                    first-keystroke="meta alt B"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X 10.5+"
+                    first-keystroke="meta alt B"/>
+            </action>
+
+            <!-- Open Branch Link: Cmd+Alt+Shift+B (Mac) / Ctrl+Alt+Shift+B (Windows/Linux) -->
+            <action
+                id="IssueLinker.OpenBranchLink"
+                class="com.github.rojae.issuelinker.actions.OpenBranchLinkAction"
+                text="Open Branch Link"
+                description="Open the current Git branch on remote in browser">
+                <keyboard-shortcut
+                    keymap="$default"
+                    first-keystroke="ctrl alt shift B"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X"
+                    first-keystroke="meta alt shift B"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X 10.5+"
+                    first-keystroke="meta alt shift B"/>
+            </action>
+
+            <!-- Copy Branch as Markdown: Cmd+Alt+Shift+M (Mac) / Ctrl+Alt+Shift+M (Windows/Linux) -->
+            <action
+                id="IssueLinker.CopyBranchAsMarkdown"
+                class="com.github.rojae.issuelinker.actions.CopyBranchAsMarkdownAction"
+                text="Copy Branch as Markdown"
+                description="Copy the current Git branch name and link as Markdown format">
+                <keyboard-shortcut
+                    keymap="$default"
+                    first-keystroke="ctrl alt shift M"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X"
+                    first-keystroke="meta alt shift M"/>
+                <keyboard-shortcut
+                    keymap="Mac OS X 10.5+"
+                    first-keystroke="meta alt shift M"/>
+            </action>
+        </group>
     </actions>
 </idea-plugin>

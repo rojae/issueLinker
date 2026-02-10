@@ -7,5 +7,5 @@ interface IssueLinkerNotifier {
         val TOPIC = Topic.create("IssueLinker Update", IssueLinkerNotifier::class.java)
     }
 
-    fun issueKeyChanged(issueKey: String?)
+    fun issueKeyChanged(issueKey: String?, branchName: String?)
 }
