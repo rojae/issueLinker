@@ -111,13 +111,25 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
         contentPanel.add(
             createCard(
                 title = issueKey ?: "No Issue",
-                subtitle = if (hasIssue) "Detected from branch" else "No issue key detected",
+                subtitle =
+                    if (hasIssue) "Detected from branch"
+                    else "Switch to a branch with an issue key (e.g. feature/PROJ-123)",
                 hasContent = hasIssue,
                 chips =
                     listOf(
-                        ChipAction("Key", "IssueLinker.CopyIssueKey", hasIssue),
-                        ChipAction("Link", "IssueLinker.CopyIssueLink", hasIssue),
-                        ChipAction("Markdown", "IssueLinker.CopyAsMarkdown", hasIssue),
+                        ChipAction("Key", "IssueLinker.CopyIssueKey", hasIssue, "Copy issue key"),
+                        ChipAction(
+                            "Link",
+                            "IssueLinker.CopyIssueLink",
+                            hasIssue,
+                            "Copy issue tracker URL",
+                        ),
+                        ChipAction(
+                            "Markdown",
+                            "IssueLinker.CopyAsMarkdown",
+                            hasIssue,
+                            "Copy as [KEY](URL)",
+                        ),
                     ),
                 primaryAction = PrimaryAction("Open in Browser", "IssueLinker.OpenIssue", hasIssue),
             )
@@ -130,12 +142,24 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
         contentPanel.add(
             createCard(
                 title = branch ?: "No Branch",
-                subtitle = if (hasBranch) "Current Git branch" else "No Git repository found",
+                subtitle =
+                    if (hasBranch) "Current Git branch"
+                    else "No Git repository found in this project",
                 hasContent = hasBranch,
                 chips =
                     listOf(
-                        ChipAction("Link", "IssueLinker.CopyBranchLink", hasBranch),
-                        ChipAction("Markdown", "IssueLinker.CopyBranchAsMarkdown", hasBranch),
+                        ChipAction(
+                            "Link",
+                            "IssueLinker.CopyBranchLink",
+                            hasBranch,
+                            "Copy branch URL on remote",
+                        ),
+                        ChipAction(
+                            "Markdown",
+                            "IssueLinker.CopyBranchAsMarkdown",
+                            hasBranch,
+                            "Copy as [branch](URL)",
+                        ),
                     ),
                 primaryAction =
                     PrimaryAction("Open in Browser", "IssueLinker.OpenBranchLink", hasBranch),
@@ -155,7 +179,12 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
         contentPanel.repaint()
     }
 
-    private data class ChipAction(val label: String, val actionId: String, val enabled: Boolean)
+    private data class ChipAction(
+        val label: String,
+        val actionId: String,
+        val enabled: Boolean,
+        val description: String,
+    )
 
     private data class PrimaryAction(val label: String, val actionId: String, val enabled: Boolean)
 
@@ -223,7 +252,14 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
                                 alignmentX = Component.LEFT_ALIGNMENT
                                 maximumSize = Dimension(Int.MAX_VALUE, 36)
                                 for (chip in chips) {
-                                    add(createChip(chip.label, chip.actionId, chip.enabled))
+                                    add(
+                                        createChip(
+                                            chip.label,
+                                            chip.actionId,
+                                            chip.enabled,
+                                            chip.description,
+                                        )
+                                    )
                                 }
                             }
                         add(chipRow)
@@ -243,7 +279,12 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
             }
     }
 
-    private fun createChip(label: String, actionId: String, enabled: Boolean): JPanel {
+    private fun createChip(
+        label: String,
+        actionId: String,
+        enabled: Boolean,
+        description: String,
+    ): JPanel {
         val shortcutText = KeymapUtil.getFirstKeyboardShortcutText(actionId)
 
         return object : JPanel(BorderLayout()) {
@@ -265,9 +306,11 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
                     }
                 add(chipLabel, BorderLayout.CENTER)
 
-                if (shortcutText.isNotEmpty() && enabled) {
-                    toolTipText = shortcutText
-                }
+                // Always show tooltip: description + shortcut when enabled, just description when
+                // disabled
+                toolTipText =
+                    if (enabled && shortcutText.isNotEmpty()) "$description ($shortcutText)"
+                    else description
 
                 if (enabled) {
                     addMouseListener(

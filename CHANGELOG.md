@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.0] - 2025-02-07
+## [1.2.0] - 2025-02-07
 
 ### Added
 - Status bar widget popup panel (click to open)
