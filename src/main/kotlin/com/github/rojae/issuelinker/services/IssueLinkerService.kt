@@ -20,12 +20,16 @@ class IssueLinkerService(private val project: Project) : Disposable {
 
     private var currentIssueKey: String? = null
     private var currentCapturedGroups: List<String>? = null
+    private var currentBranchName: String? = null
 
     val issueKey: String?
         get() = currentIssueKey
 
     val capturedGroups: List<String>?
         get() = currentCapturedGroups
+
+    val branchName: String?
+        get() = currentBranchName
 
     init {
         project.messageBus
@@ -42,6 +46,7 @@ class IssueLinkerService(private val project: Project) : Disposable {
 
     private fun updateFromCurrentBranch() {
         val branchName = getCurrentBranchName()
+        currentBranchName = branchName
         if (branchName != null) {
             val settings = IssueLinkerSettings.getInstance()
             val capturedGroups =
@@ -57,7 +62,9 @@ class IssueLinkerService(private val project: Project) : Disposable {
     }
 
     private fun notifyIssueKeyChanged() {
-        project.messageBus.syncPublisher(IssueLinkerNotifier.TOPIC).issueKeyChanged(currentIssueKey)
+        project.messageBus
+            .syncPublisher(IssueLinkerNotifier.TOPIC)
+            .issueKeyChanged(currentIssueKey, currentBranchName)
     }
 
     private fun getCurrentBranchName(): String? {

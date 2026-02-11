@@ -4,7 +4,12 @@ import com.github.rojae.issuelinker.IssueLinkerBundle
 import com.github.rojae.issuelinker.services.IssueLinkerNotifier
 import com.github.rojae.issuelinker.services.IssueLinkerService
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.ide.CopyPasteManager
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.impl.SimpleDataContext
+import com.intellij.openapi.keymap.KeymapUtil
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -12,7 +17,6 @@ import com.intellij.openapi.wm.CustomStatusBarWidget
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
-import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
@@ -21,7 +25,6 @@ import java.awt.Cursor
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.Point
-import java.awt.datatransfer.StringSelection
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.Box
@@ -52,14 +55,14 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, D
 
     init {
         label.border = JBUI.Borders.empty(0, 4)
-        label.toolTipText = IssueLinkerBundle.message("widget.tooltip")
+        label.toolTipText = buildTooltipText()
         updateLabel()
 
         // Subscribe to issue key changes
         connection.subscribe(
             IssueLinkerNotifier.TOPIC,
             object : IssueLinkerNotifier {
-                override fun issueKeyChanged(issueKey: String?) {
+                override fun issueKeyChanged(issueKey: String?, branchName: String?) {
                     updateLabel()
                 }
             },
@@ -112,8 +115,13 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, D
                     }
                 add(issueLabel)
 
+                val branch = service?.branchName
                 val statusText =
-                    if (hasIssue) "from current branch" else "Switch to a branch with issue key"
+                    when {
+                        hasIssue && branch != null -> "Branch: $branch"
+                        branch != null -> "Branch: $branch (no issue key detected)"
+                        else -> "Switch to a branch with issue key"
+                    }
                 val statusLabel =
                     JBLabel(statusText).apply {
                         foreground = JBUI.CurrentTheme.Label.disabledForeground()
@@ -131,12 +139,30 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, D
                 )
                 add(Box.createVerticalStrut(8))
 
-                // Action buttons
-                add(createPopupButton("📋  Copy Issue Key", hasIssue) { copyIssueKey() })
+                // Action buttons with dynamic shortcut hints
+                add(
+                    createActionPopupButton(
+                        "📋  Copy Issue Key",
+                        "IssueLinker.CopyIssueKey",
+                        hasIssue,
+                    )
+                )
                 add(Box.createVerticalStrut(4))
-                add(createPopupButton("🔗  Copy Issue Link", hasIssue) { copyIssueLink() })
+                add(
+                    createActionPopupButton(
+                        "🔗  Copy Issue Link",
+                        "IssueLinker.CopyIssueLink",
+                        hasIssue,
+                    )
+                )
                 add(Box.createVerticalStrut(4))
-                add(createPopupButton("📝  Copy as Markdown", hasIssue) { copyAsMarkdown() })
+                add(
+                    createActionPopupButton(
+                        "📝  Copy as Markdown",
+                        "IssueLinker.CopyAsMarkdown",
+                        hasIssue,
+                    )
+                )
 
                 add(Box.createVerticalStrut(8))
                 add(
@@ -147,15 +173,61 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, D
                 )
                 add(Box.createVerticalStrut(8))
 
-                add(createPopupButton("🌐  Open in Browser", hasIssue) { openInBrowser() })
+                add(
+                    createActionPopupButton(
+                        "🌐  Open in Browser",
+                        "IssueLinker.OpenIssue",
+                        hasIssue,
+                    )
+                )
                 add(Box.createVerticalStrut(4))
-                add(createPopupButton("📂  Open Tool Window", true) { openToolWindow() })
+                add(
+                    createActionPopupButton(
+                        "🔗  Copy Branch Link",
+                        "IssueLinker.CopyBranchLink",
+                        true,
+                    )
+                )
+                add(Box.createVerticalStrut(4))
+                add(
+                    createActionPopupButton(
+                        "📝  Copy Branch as Markdown",
+                        "IssueLinker.CopyBranchAsMarkdown",
+                        true,
+                    )
+                )
+                add(Box.createVerticalStrut(4))
+                add(
+                    createActionPopupButton(
+                        "🌐  Open Branch Link",
+                        "IssueLinker.OpenBranchLink",
+                        true,
+                    )
+                )
+                add(Box.createVerticalStrut(4))
+                add(
+                    createActionPopupButton(
+                        "📂  Open Tool Window",
+                        "IssueLinker.OpenToolWindow",
+                        true,
+                    )
+                )
                 add(Box.createVerticalStrut(4))
                 add(createPopupButton("⚙️  Settings", true) { openSettings() })
             }
 
-        panel.preferredSize = Dimension(220, panel.preferredSize.height)
+        panel.preferredSize = Dimension(280, panel.preferredSize.height)
         return panel
+    }
+
+    private fun createActionPopupButton(
+        label: String,
+        actionId: String,
+        enabled: Boolean,
+    ): JComponent {
+        val shortcut = KeymapUtil.getFirstKeyboardShortcutText(actionId)
+        val text = if (shortcut.isNotEmpty()) "$label  $shortcut" else label
+        return createPopupButton(text, enabled) { executeAction(actionId) }
     }
 
     private fun createPopupButton(text: String, enabled: Boolean, action: () -> Unit): JComponent {
@@ -204,39 +276,39 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, D
         }
     }
 
-    private fun copyIssueKey() {
-        val service = project.getService(IssueLinkerService::class.java)
-        service?.issueKey?.let { CopyPasteManager.getInstance().setContents(StringSelection(it)) }
-    }
-
-    private fun copyIssueLink() {
-        val service = project.getService(IssueLinkerService::class.java)
-        service?.buildIssueUrl()?.let {
-            CopyPasteManager.getInstance().setContents(StringSelection(it))
-        }
-    }
-
-    private fun copyAsMarkdown() {
-        val service = project.getService(IssueLinkerService::class.java)
-        val issueKey = service?.issueKey
-        val issueUrl = service?.buildIssueUrl()
-        if (issueKey != null && issueUrl != null) {
-            val markdown = "[$issueKey]($issueUrl)"
-            CopyPasteManager.getInstance().setContents(StringSelection(markdown))
-        }
-    }
-
-    private fun openInBrowser() {
-        project.getService(IssueLinkerService::class.java)?.openIssueInBrowser()
-    }
-
-    private fun openToolWindow() {
-        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("IssueLinker")
-        toolWindow?.show()
+    private fun executeAction(actionId: String) {
+        val action = ActionManager.getInstance().getAction(actionId) ?: return
+        val dataContext = SimpleDataContext.builder().add(CommonDataKeys.PROJECT, project).build()
+        val event = AnActionEvent.createFromAnAction(action, null, ActionPlaces.POPUP, dataContext)
+        action.actionPerformed(event)
     }
 
     private fun openSettings() {
         ShowSettingsUtil.getInstance().showSettingsDialog(project, "IssueLinker")
+    }
+
+    private fun buildTooltipText(): String {
+        val shortcuts =
+            listOf(
+                "IssueLinker.OpenIssue" to "Open Issue in Browser",
+                "IssueLinker.CopyIssueKey" to "Copy Issue Key",
+                "IssueLinker.CopyIssueLink" to "Copy Issue Link",
+                "IssueLinker.CopyAsMarkdown" to "Copy as Markdown",
+                "IssueLinker.CopyBranchLink" to "Copy Branch Link",
+                "IssueLinker.CopyBranchAsMarkdown" to "Copy Branch as Markdown",
+                "IssueLinker.OpenBranchLink" to "Open Branch Link",
+                "IssueLinker.OpenToolWindow" to "Open IssueLinker Panel",
+            )
+        val sb = StringBuilder("<html><b>IssueLinker</b><br/>Click to open panel<br/><br/>")
+        sb.append("<b>Shortcuts:</b><br/>")
+        for ((actionId, desc) in shortcuts) {
+            val key = KeymapUtil.getFirstKeyboardShortcutText(actionId)
+            if (key.isNotEmpty()) {
+                sb.append("$key — $desc<br/>")
+            }
+        }
+        sb.append("</html>")
+        return sb.toString()
     }
 
     override fun ID(): String = IssueLinkerWidgetFactory.WIDGET_ID
@@ -254,6 +326,8 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, D
 
     fun updateLabel() {
         val service = project.getService(IssueLinkerService::class.java)
-        label.text = service?.issueKey ?: IssueLinkerBundle.message("widget.noIssue")
+        val issueKey = service?.issueKey
+        val branch = service?.branchName
+        label.text = issueKey ?: branch ?: IssueLinkerBundle.message("widget.noIssue")
     }
 }
