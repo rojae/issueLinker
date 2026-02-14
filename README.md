@@ -230,7 +230,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## Acknowledgments
 
 - Built with [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template)
-- Inspired by the need to quickly navigate between code and issue trackers
+- Inspired by the need to quickly navigate between code and issue trackers.
 
 ---
 
