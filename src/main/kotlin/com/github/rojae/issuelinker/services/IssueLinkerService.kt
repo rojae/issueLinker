@@ -51,7 +51,15 @@ class IssueLinkerService(private val project: Project) : Disposable {
             val settings = IssueLinkerSettings.getInstance()
             val capturedGroups =
                 BranchParserUtil.parseIssueKey(branchName, settings.branchParsingRegex)
-            currentIssueKey = capturedGroups?.firstOrNull()
+            val newIssueKey = capturedGroups?.firstOrNull()
+            if (newIssueKey != currentIssueKey) {
+                currentIssueKey = newIssueKey
+                newIssueKey?.let { key ->
+                    RecentIssuesService.getInstance(project).addIssueKey(key)
+                }
+            } else {
+                currentIssueKey = newIssueKey
+            }
             currentCapturedGroups = capturedGroups
         } else {
             currentIssueKey = null
@@ -79,6 +87,15 @@ class IssueLinkerService(private val project: Project) : Disposable {
         val settings = IssueLinkerSettings.getInstance()
         val groups = capturedGroups ?: return null
         return UrlBuilderUtil.buildUrl(settings.hostUrl, settings.urlPathPattern, groups)
+    }
+
+    fun openIssueByKey(issueKey: String) {
+        val settings = IssueLinkerSettings.getInstance()
+        val url =
+            UrlBuilderUtil.buildUrl(settings.hostUrl, settings.urlPathPattern, listOf(issueKey))
+        if (url != null) {
+            BrowserUtil.browse(url)
+        }
     }
 
     fun openIssueInBrowser(): Boolean {

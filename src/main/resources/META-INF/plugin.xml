@@ -48,6 +48,10 @@
         <applicationService
             serviceImplementation="com.github.rojae.issuelinker.settings.IssueLinkerSettings"/>
 
+        <!-- Project-level recent issues persistence -->
+        <projectService
+            serviceImplementation="com.github.rojae.issuelinker.services.RecentIssuesService"/>
+
         <!-- Status bar widget -->
         <statusBarWidgetFactory
             id="IssueLinkerWidget"
@@ -78,6 +82,15 @@
         <!-- Startup activity to initialize service after project load -->
         <postStartupActivity
             implementation="com.github.rojae.issuelinker.startup.IssueLinkerStartupActivity"/>
+
+        <!-- Commit message auto-fill with issue key -->
+        <vcs.commitMessageProvider
+            implementation="com.github.rojae.issuelinker.vcs.IssueLinkerCommitMessageProvider"/>
+
+        <!-- Issue key annotator for editor highlighting -->
+        <annotator
+            language=""
+            implementationClass="com.github.rojae.issuelinker.editor.IssueKeyAnnotator"/>
     </extensions>
 
     <actions>

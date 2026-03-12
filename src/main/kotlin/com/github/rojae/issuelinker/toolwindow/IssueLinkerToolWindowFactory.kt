@@ -1,13 +1,16 @@
 package com.github.rojae.issuelinker.toolwindow
 
+import com.github.rojae.issuelinker.IssueLinkerBundle
 import com.github.rojae.issuelinker.services.IssueLinkerNotifier
 import com.github.rojae.issuelinker.services.IssueLinkerService
+import com.github.rojae.issuelinker.services.RecentIssuesService
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.keymap.KeymapUtil
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DumbAware
@@ -33,6 +36,7 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.Box
 import javax.swing.BoxLayout
+import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.ScrollPaneConstants
 
@@ -70,7 +74,7 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
             IssueLinkerNotifier.TOPIC,
             object : IssueLinkerNotifier {
                 override fun issueKeyChanged(issueKey: String?, branchName: String?) {
-                    refreshContent()
+                    ApplicationManager.getApplication().invokeLater { refreshContent() }
                 }
             },
         )
@@ -110,10 +114,10 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
         // ── Issue Card ──
         contentPanel.add(
             createCard(
-                title = issueKey ?: "No Issue",
+                title = issueKey ?: IssueLinkerBundle.message("nokey.toolwindow.title"),
                 subtitle =
                     if (hasIssue) "Detected from branch"
-                    else "Switch to a branch with an issue key (e.g. feature/PROJ-123)",
+                    else IssueLinkerBundle.message("nokey.toolwindow.subtitle"),
                 hasContent = hasIssue,
                 chips =
                     listOf(
@@ -165,6 +169,11 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
                     PrimaryAction("Open in Browser", "IssueLinker.OpenBranchLink", hasBranch),
             )
         )
+
+        contentPanel.add(Box.createVerticalStrut(10))
+
+        // ── Recent Issues Section ──
+        contentPanel.add(createRecentIssuesSection())
 
         contentPanel.add(Box.createVerticalStrut(16))
 
@@ -242,6 +251,27 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
                                 alignmentX = Component.LEFT_ALIGNMENT
                             }
                         )
+
+                        if (!hasContent) {
+                            add(Box.createVerticalStrut(8))
+                            add(
+                                JBLabel(IssueLinkerBundle.message("nokey.toolwindow.configure"))
+                                    .apply {
+                                        foreground = JBUI.CurrentTheme.Link.Foreground.ENABLED
+                                        font = font.deriveFont(12f)
+                                        cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+                                        alignmentX = Component.LEFT_ALIGNMENT
+                                        addMouseListener(
+                                            object : MouseAdapter() {
+                                                override fun mouseClicked(e: MouseEvent) {
+                                                    ShowSettingsUtil.getInstance()
+                                                        .showSettingsDialog(project, "IssueLinker")
+                                                }
+                                            }
+                                        )
+                                    }
+                            )
+                        }
 
                         add(Box.createVerticalStrut(12))
 
@@ -413,6 +443,78 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
                 super.paintComponent(g)
             }
         }
+    }
+
+    private fun createRecentIssuesSection(): JPanel {
+        val recentService = RecentIssuesService.getInstance(project)
+        val recentIssues = recentService.getRecentIssues()
+
+        return JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            isOpaque = false
+            alignmentX = Component.LEFT_ALIGNMENT
+            border = JBUI.Borders.empty(0, 14, 0, 14)
+
+            // Section title
+            add(
+                JBLabel(IssueLinkerBundle.message("recent.title")).apply {
+                    font = font.deriveFont(Font.BOLD, 13f)
+                    foreground = JBUI.CurrentTheme.Label.disabledForeground()
+                    alignmentX = Component.LEFT_ALIGNMENT
+                    border = JBUI.Borders.emptyBottom(6)
+                }
+            )
+
+            if (recentIssues.isEmpty()) {
+                add(
+                    JBLabel(IssueLinkerBundle.message("recent.empty")).apply {
+                        foreground = JBUI.CurrentTheme.Label.disabledForeground()
+                        font = font.deriveFont(12f)
+                        alignmentX = Component.LEFT_ALIGNMENT
+                    }
+                )
+            } else {
+                for (entry in recentIssues) {
+                    add(createRecentIssueItem(entry.issueKey))
+                    add(Box.createVerticalStrut(2))
+                }
+            }
+        }
+    }
+
+    private fun createRecentIssueItem(issueKey: String): JComponent {
+        return JBLabel(issueKey).apply {
+            font = font.deriveFont(12f)
+            foreground = JBUI.CurrentTheme.Link.Foreground.ENABLED
+            cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+            alignmentX = Component.LEFT_ALIGNMENT
+            border = JBUI.Borders.empty(3, 4)
+            toolTipText = IssueLinkerBundle.message("recent.open", issueKey)
+            addMouseListener(
+                object : MouseAdapter() {
+                    override fun mouseEntered(e: MouseEvent) {
+                        val label = e.component as JBLabel
+                        label.isOpaque = true
+                        label.background = JBUI.CurrentTheme.List.Hover.background(true)
+                        label.repaint()
+                    }
+
+                    override fun mouseExited(e: MouseEvent) {
+                        val label = e.component as JBLabel
+                        label.isOpaque = false
+                        label.repaint()
+                    }
+
+                    override fun mouseClicked(e: MouseEvent) {
+                        openRecentIssue(issueKey)
+                    }
+                }
+            )
+        }
+    }
+
+    private fun openRecentIssue(issueKey: String) {
+        IssueLinkerService.getInstance(project).openIssueByKey(issueKey)
     }
 
     private fun createFooter(): JPanel {

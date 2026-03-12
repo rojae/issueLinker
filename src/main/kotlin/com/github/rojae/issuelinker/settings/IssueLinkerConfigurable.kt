@@ -1,13 +1,22 @@
 package com.github.rojae.issuelinker.settings
 
 import com.github.rojae.issuelinker.IssueLinkerBundle
+import com.github.rojae.issuelinker.util.BranchParserUtil
+import com.github.rojae.issuelinker.util.UrlBuilderUtil
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.options.ConfigurationException
+import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBCheckBox
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
+import com.intellij.util.ui.JBUI
+import java.awt.BorderLayout
+import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
 
 class IssueLinkerConfigurable : Configurable {
     private var panel: JPanel? = null
@@ -17,9 +26,32 @@ class IssueLinkerConfigurable : Configurable {
     private val useInternalBrowserCheckbox =
         JBCheckBox(IssueLinkerBundle.message("settings.useInternalBrowser.label"))
 
+    // Test section fields
+    private val testBranchField = JBTextField()
+    private val resultIssueKeyLabel = JBLabel("—")
+    private val resultUrlLabel = JBLabel("—")
+    private val regexStatusLabel = JBLabel("")
+
     override fun getDisplayName(): String = "IssueLinker"
 
     override fun createComponent(): JComponent? {
+        // Add document listeners for real-time preview
+        val updateListener =
+            object : DocumentListener {
+                override fun insertUpdate(e: DocumentEvent) = updateTestResult()
+
+                override fun removeUpdate(e: DocumentEvent) = updateTestResult()
+
+                override fun changedUpdate(e: DocumentEvent) = updateTestResult()
+            }
+
+        testBranchField.document.addDocumentListener(updateListener)
+        hostUrlField.document.addDocumentListener(updateListener)
+        urlPathPatternField.document.addDocumentListener(updateListener)
+        branchParsingRegexField.document.addDocumentListener(updateListener)
+
+        testBranchField.emptyText.text = "e.g., feature/PROJ-123-add-login"
+
         panel =
             FormBuilder.createFormBuilder()
                 .addLabeledComponent(
@@ -37,11 +69,121 @@ class IssueLinkerConfigurable : Configurable {
                     branchParsingRegexField,
                     true,
                 )
+                .addComponent(regexStatusLabel)
                 .addSeparator()
                 .addComponent(useInternalBrowserCheckbox)
+                .addSeparator()
+                .addComponent(createTestSection())
                 .addComponentFillVertically(JPanel(), 0)
                 .panel
         return panel
+    }
+
+    private fun createTestSection(): JPanel {
+        return JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            border = JBUI.Borders.emptyTop(8)
+
+            val titleLabel =
+                JBLabel(IssueLinkerBundle.message("settings.test.title")).apply {
+                    font = font.deriveFont(java.awt.Font.BOLD)
+                    border = JBUI.Borders.emptyBottom(8)
+                }
+            add(titleLabel)
+
+            val inputPanel =
+                JPanel(BorderLayout()).apply {
+                    add(
+                        JBLabel(IssueLinkerBundle.message("settings.test.branchName")),
+                        BorderLayout.WEST,
+                    )
+                    add(testBranchField, BorderLayout.CENTER)
+                    maximumSize =
+                        java.awt.Dimension(Int.MAX_VALUE, testBranchField.preferredSize.height)
+                }
+            add(inputPanel)
+
+            add(javax.swing.Box.createVerticalStrut(8))
+
+            val resultPanel =
+                JPanel().apply {
+                    layout = BoxLayout(this, BoxLayout.Y_AXIS)
+                    border =
+                        JBUI.Borders.compound(
+                            JBUI.Borders.customLine(JBUI.CurrentTheme.Editor.BORDER_COLOR, 1),
+                            JBUI.Borders.empty(8),
+                        )
+
+                    val keyRow =
+                        JPanel(BorderLayout()).apply {
+                            isOpaque = false
+                            add(
+                                JBLabel(IssueLinkerBundle.message("settings.test.issueKey")),
+                                BorderLayout.WEST,
+                            )
+                            add(resultIssueKeyLabel, BorderLayout.CENTER)
+                        }
+                    add(keyRow)
+
+                    add(javax.swing.Box.createVerticalStrut(4))
+
+                    val urlRow =
+                        JPanel(BorderLayout()).apply {
+                            isOpaque = false
+                            add(
+                                JBLabel(IssueLinkerBundle.message("settings.test.issueUrl")),
+                                BorderLayout.WEST,
+                            )
+                            add(resultUrlLabel, BorderLayout.CENTER)
+                        }
+                    add(urlRow)
+                }
+            add(resultPanel)
+        }
+    }
+
+    private fun updateTestResult() {
+        val branchName = testBranchField.text
+        val regex = branchParsingRegexField.text
+        val hostUrl = hostUrlField.text
+        val pathPattern = urlPathPatternField.text
+
+        // Validate regex
+        val validRegex = isValidRegex(regex)
+        if (regex.isNotBlank() && !validRegex) {
+            regexStatusLabel.text = IssueLinkerBundle.message("settings.validation.invalidRegex")
+            regexStatusLabel.foreground = JBColor.RED
+        } else {
+            regexStatusLabel.text = ""
+        }
+
+        // Parse branch name
+        if (branchName.isBlank() || regex.isBlank() || !validRegex) {
+            resultIssueKeyLabel.text = "—"
+            resultIssueKeyLabel.foreground = JBUI.CurrentTheme.Label.disabledForeground()
+            resultUrlLabel.text = "—"
+            resultUrlLabel.foreground = JBUI.CurrentTheme.Label.disabledForeground()
+            return
+        }
+
+        val capturedGroups = BranchParserUtil.parseIssueKey(branchName, regex)
+        val issueKey = capturedGroups?.firstOrNull()
+
+        if (issueKey != null) {
+            resultIssueKeyLabel.text = "  $issueKey"
+            resultIssueKeyLabel.foreground = JBColor(0x007F00, 0x6AAF6A)
+
+            val url = UrlBuilderUtil.buildUrl(hostUrl, pathPattern, capturedGroups)
+            resultUrlLabel.text = if (url != null) "  $url" else "  —"
+            resultUrlLabel.foreground =
+                if (url != null) JBUI.CurrentTheme.Label.foreground()
+                else JBUI.CurrentTheme.Label.disabledForeground()
+        } else {
+            resultIssueKeyLabel.text = "  " + IssueLinkerBundle.message("settings.test.noMatch")
+            resultIssueKeyLabel.foreground = JBColor.RED
+            resultUrlLabel.text = "  —"
+            resultUrlLabel.foreground = JBUI.CurrentTheme.Label.disabledForeground()
+        }
     }
 
     override fun isModified(): Boolean {

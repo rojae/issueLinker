@@ -3,12 +3,14 @@ package com.github.rojae.issuelinker.widgets
 import com.github.rojae.issuelinker.IssueLinkerBundle
 import com.github.rojae.issuelinker.services.IssueLinkerNotifier
 import com.github.rojae.issuelinker.services.IssueLinkerService
+import com.github.rojae.issuelinker.services.RecentIssuesService
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.keymap.KeymapUtil
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
@@ -63,7 +65,7 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, D
             IssueLinkerNotifier.TOPIC,
             object : IssueLinkerNotifier {
                 override fun issueKeyChanged(issueKey: String?, branchName: String?) {
-                    updateLabel()
+                    ApplicationManager.getApplication().invokeLater { updateLabel() }
                 }
             },
         )
@@ -80,7 +82,7 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, D
 
     private fun showPopupPanel(e: MouseEvent) {
         val service = project.getService(IssueLinkerService::class.java)
-        val issueKey = service?.issueKey ?: "No Issue"
+        val issueKey = service?.issueKey ?: IssueLinkerBundle.message("nokey.popup.title")
         val popupContent = createPopupContent()
         val popup =
             JBPopupFactory.getInstance()
@@ -109,7 +111,7 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, D
 
                 // Issue Key Display
                 val issueLabel =
-                    JBLabel(issueKey ?: "No Issue").apply {
+                    JBLabel(issueKey ?: IssueLinkerBundle.message("nokey.popup.title")).apply {
                         font = font.deriveFont(Font.BOLD, 16f)
                         alignmentX = Component.LEFT_ALIGNMENT
                     }
@@ -119,8 +121,9 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, D
                 val statusText =
                     when {
                         hasIssue && branch != null -> "Branch: $branch"
-                        branch != null -> "Branch: $branch (no issue key detected)"
-                        else -> "Switch to a branch with issue key"
+                        branch != null ->
+                            "Branch: $branch\n${IssueLinkerBundle.message("nokey.popup.hint")}"
+                        else -> IssueLinkerBundle.message("nokey.popup.hint")
                     }
                 val statusLabel =
                     JBLabel(statusText).apply {
@@ -212,6 +215,37 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, D
                         true,
                     )
                 )
+                // Recent Issues section
+                val recentService = RecentIssuesService.getInstance(project)
+                val recentIssues = recentService.getRecentIssues()
+                if (recentIssues.isNotEmpty()) {
+                    add(Box.createVerticalStrut(8))
+                    add(
+                        JSeparator().apply {
+                            alignmentX = Component.LEFT_ALIGNMENT
+                            maximumSize = Dimension(Int.MAX_VALUE, 1)
+                        }
+                    )
+                    add(Box.createVerticalStrut(4))
+                    add(
+                        JBLabel(IssueLinkerBundle.message("recent.title")).apply {
+                            font = font.deriveFont(Font.BOLD, 11f)
+                            foreground = JBUI.CurrentTheme.Label.disabledForeground()
+                            alignmentX = Component.LEFT_ALIGNMENT
+                            border = JBUI.Borders.empty(2, 8)
+                        }
+                    )
+                    add(Box.createVerticalStrut(2))
+                    for (entry in recentIssues.take(5)) {
+                        add(
+                            createPopupButton("   ${entry.issueKey}", true) {
+                                openRecentIssue(entry.issueKey)
+                            }
+                        )
+                        add(Box.createVerticalStrut(2))
+                    }
+                }
+
                 add(Box.createVerticalStrut(4))
                 add(createPopupButton("⚙️  Settings", true) { openSettings() })
             }
@@ -287,6 +321,10 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, D
         ShowSettingsUtil.getInstance().showSettingsDialog(project, "IssueLinker")
     }
 
+    private fun openRecentIssue(issueKey: String) {
+        IssueLinkerService.getInstance(project).openIssueByKey(issueKey)
+    }
+
     private fun buildTooltipText(): String {
         val shortcuts =
             listOf(
@@ -327,7 +365,14 @@ class IssueLinkerWidget(private val project: Project) : CustomStatusBarWidget, D
     fun updateLabel() {
         val service = project.getService(IssueLinkerService::class.java)
         val issueKey = service?.issueKey
-        val branch = service?.branchName
-        label.text = issueKey ?: branch ?: IssueLinkerBundle.message("widget.noIssue")
+        if (issueKey != null) {
+            label.text = issueKey
+            label.foreground = JBUI.CurrentTheme.Label.foreground()
+            label.toolTipText = buildTooltipText()
+        } else {
+            label.text = IssueLinkerBundle.message("nokey.widget.text")
+            label.foreground = JBUI.CurrentTheme.Label.disabledForeground()
+            label.toolTipText = IssueLinkerBundle.message("nokey.widget.tooltip")
+        }
     }
 }
