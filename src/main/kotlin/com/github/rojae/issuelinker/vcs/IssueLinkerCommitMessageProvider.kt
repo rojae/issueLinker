@@ -1,5 +1,6 @@
 package com.github.rojae.issuelinker.vcs
 
+import com.github.rojae.issuelinker.IssueLinkerBundle
 import com.github.rojae.issuelinker.services.IssueLinkerService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vcs.changes.LocalChangeList
@@ -11,7 +12,6 @@ class IssueLinkerCommitMessageProvider : CommitMessageProvider {
         val service = IssueLinkerService.getInstance(project)
         val issueKey = service.issueKey ?: return null
 
-        // Return the issue key prefix as the initial commit message
-        return "[$issueKey] "
+        return IssueLinkerBundle.message("commit.message.prefix", issueKey) + " "
     }
 }

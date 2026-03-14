@@ -91,6 +91,11 @@
         <annotator
             language=""
             implementationClass="com.github.rojae.issuelinker.editor.IssueKeyAnnotator"/>
+
+        <!-- Gutter icon line marker for issue keys -->
+        <codeInsight.lineMarkerProvider
+            language=""
+            implementationClass="com.github.rojae.issuelinker.editor.IssueKeyLineMarkerProvider"/>
     </extensions>
 
     <actions>

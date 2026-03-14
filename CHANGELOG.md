@@ -8,6 +8,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Gutter Icon Line Marker** — Clickable web icon in editor gutter next to issue key patterns
+  - Click to open issue in browser
+  - Tooltip shows issue key and URL
+- **Recent Issues Context Menu** — Right-click on recent issue items in tool window
+  - Open in Browser, Copy Issue Key, Copy Issue Link, Copy as Markdown
+  - Remove from History to clean up entries
+- **Tool Window Toolbar** — Standard IntelliJ ActionToolbar replaces footer buttons
+  - Refresh, Open in Browser, Settings actions with icons
+- **Tool Window Badge** — Issue key displayed in tool window tab and stripe title
+- **Settings UX Polish** — Improved settings panel with visual grouping
+  - TitledSeparator sections: Connection, Parsing, Browser
+  - Placeholder text for all input fields
+  - Help text descriptions below each field
+
+### Changed
+- **Auto-expiring Copy Notifications** — Success notifications auto-dismiss after 2 seconds
+- **Smart Action Enablement** — Actions disabled when no issue key or branch is available
+  - Menu items remain visible but grayed out
+- **Widget Hover Effect** — Hand cursor and hover background on status bar widget
+- **Modern Popup Icons** — Replaced emoji icons with IntelliJ AllIcons for consistent, native look
+  - Copy actions use `AllIcons.Actions.Copy`
+  - Link actions use `AllIcons.Ide.Link`
+  - Browser actions use `AllIcons.General.Web`
+  - Settings uses `AllIcons.General.Settings`
+- **Full i18n Coverage** — All user-visible strings externalized to resource bundle
+  - Widget popup labels, browser tool window, settings display name, tooltip text
+- **Shared Notification Utility** — `IssueLinkerNotifications` object eliminates copy-paste across action classes
+
+### Fixed
+- Thread-safe regex caching using `AtomicReference` in editor annotator and line marker provider
+- Thread-safe state in `IssueLinkerService` with `@Volatile` fields
+- Thread-safe `RecentIssuesService` with `synchronized` blocks
+- Commit message provider now uses bundle key for i18n support
+- Toolbar and tool window strings externalized to resource bundle
+- Browser tool window placeholder text externalized to bundle
+- Settings display name uses bundle key consistently across all references
+
+## [1.2.0] - 2025-02-07
+
+### Added
 - **Recent Issues History** — Track last 10 issue keys per project with persistent storage
   - Recent issues section in tool window panel
   - Recent issues section in status bar popup (last 5)
@@ -29,15 +69,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Status bar widget shows "No Issue" in dimmed style
   - Tool window shows "No Issue Linked" with configure shortcut link
   - Popup shows descriptive empty state with configuration hint
-
-### Fixed
-- EDT threading safety for widget and tool window UI updates
-- Optimized editor annotator with regex caching for better performance
-- Eliminated duplicate recent issue entries on repeated git events
-
-## [1.2.0] - 2025-02-07
-
-### Added
 - Status bar widget popup panel (click to open)
   - Copy Issue Key - Copy issue key to clipboard
   - Copy Issue Link - Copy full URL to clipboard
@@ -50,7 +81,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Current issue display with status
   - Tab shows issue key (e.g., PROJ-123)
   - Refresh button for manual update
-- Menu items are disabled when no issue is detected
+
+### Fixed
+- EDT threading safety for widget and tool window UI updates
+- Optimized editor annotator with regex caching for better performance
+- Eliminated duplicate recent issue entries on repeated git events
 
 ### Changed
 - Minimum supported IDE version: 2024.3

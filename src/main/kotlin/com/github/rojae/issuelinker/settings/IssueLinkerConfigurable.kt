@@ -6,6 +6,7 @@ import com.github.rojae.issuelinker.util.UrlBuilderUtil
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.options.ConfigurationException
 import com.intellij.ui.JBColor
+import com.intellij.ui.TitledSeparator
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
@@ -28,11 +29,11 @@ class IssueLinkerConfigurable : Configurable {
 
     // Test section fields
     private val testBranchField = JBTextField()
-    private val resultIssueKeyLabel = JBLabel("—")
-    private val resultUrlLabel = JBLabel("—")
+    private val resultIssueKeyLabel = JBLabel("\u2014")
+    private val resultUrlLabel = JBLabel("\u2014")
     private val regexStatusLabel = JBLabel("")
 
-    override fun getDisplayName(): String = "IssueLinker"
+    override fun getDisplayName(): String = IssueLinkerBundle.message("settings.displayName")
 
     override fun createComponent(): JComponent? {
         // Add document listeners for real-time preview
@@ -51,32 +52,58 @@ class IssueLinkerConfigurable : Configurable {
         branchParsingRegexField.document.addDocumentListener(updateListener)
 
         testBranchField.emptyText.text = "e.g., feature/PROJ-123-add-login"
+        hostUrlField.emptyText.text = "https://jira.company.com"
+        urlPathPatternField.emptyText.text = "/browse/{0}"
+        branchParsingRegexField.emptyText.text = "([A-Z][A-Z0-9]+-\\d+)"
 
         panel =
             FormBuilder.createFormBuilder()
+                .addComponent(
+                    TitledSeparator(IssueLinkerBundle.message("settings.section.connection"))
+                )
                 .addLabeledComponent(
                     IssueLinkerBundle.message("settings.hostUrl.label"),
                     hostUrlField,
                     true,
                 )
+                .addComponent(createHelpLabel(IssueLinkerBundle.message("settings.hostUrl.help")))
                 .addLabeledComponent(
                     IssueLinkerBundle.message("settings.urlPathPattern.label"),
                     urlPathPatternField,
                     true,
+                )
+                .addComponent(
+                    createHelpLabel(IssueLinkerBundle.message("settings.urlPathPattern.help"))
+                )
+                .addComponent(
+                    TitledSeparator(IssueLinkerBundle.message("settings.section.parsing"))
                 )
                 .addLabeledComponent(
                     IssueLinkerBundle.message("settings.branchParsingRegex.label"),
                     branchParsingRegexField,
                     true,
                 )
+                .addComponent(
+                    createHelpLabel(IssueLinkerBundle.message("settings.branchParsingRegex.help"))
+                )
                 .addComponent(regexStatusLabel)
-                .addSeparator()
+                .addComponent(
+                    TitledSeparator(IssueLinkerBundle.message("settings.section.browser"))
+                )
                 .addComponent(useInternalBrowserCheckbox)
                 .addSeparator()
                 .addComponent(createTestSection())
                 .addComponentFillVertically(JPanel(), 0)
                 .panel
         return panel
+    }
+
+    private fun createHelpLabel(text: String): JBLabel {
+        return JBLabel(text).apply {
+            foreground = JBUI.CurrentTheme.Label.disabledForeground()
+            font = font.deriveFont(font.size2D - 1f)
+            border = JBUI.Borders.emptyLeft(20)
+        }
     }
 
     private fun createTestSection(): JPanel {
@@ -159,9 +186,9 @@ class IssueLinkerConfigurable : Configurable {
 
         // Parse branch name
         if (branchName.isBlank() || regex.isBlank() || !validRegex) {
-            resultIssueKeyLabel.text = "—"
+            resultIssueKeyLabel.text = "\u2014"
             resultIssueKeyLabel.foreground = JBUI.CurrentTheme.Label.disabledForeground()
-            resultUrlLabel.text = "—"
+            resultUrlLabel.text = "\u2014"
             resultUrlLabel.foreground = JBUI.CurrentTheme.Label.disabledForeground()
             return
         }
@@ -174,14 +201,14 @@ class IssueLinkerConfigurable : Configurable {
             resultIssueKeyLabel.foreground = JBColor(0x007F00, 0x6AAF6A)
 
             val url = UrlBuilderUtil.buildUrl(hostUrl, pathPattern, capturedGroups)
-            resultUrlLabel.text = if (url != null) "  $url" else "  —"
+            resultUrlLabel.text = if (url != null) "  $url" else "  \u2014"
             resultUrlLabel.foreground =
                 if (url != null) JBUI.CurrentTheme.Label.foreground()
                 else JBUI.CurrentTheme.Label.disabledForeground()
         } else {
             resultIssueKeyLabel.text = "  " + IssueLinkerBundle.message("settings.test.noMatch")
             resultIssueKeyLabel.foreground = JBColor.RED
-            resultUrlLabel.text = "  —"
+            resultUrlLabel.text = "  \u2014"
             resultUrlLabel.foreground = JBUI.CurrentTheme.Label.disabledForeground()
         }
     }
@@ -215,6 +242,7 @@ class IssueLinkerConfigurable : Configurable {
         urlPathPatternField.text = settings.urlPathPattern
         branchParsingRegexField.text = settings.branchParsingRegex
         useInternalBrowserCheckbox.isSelected = settings.useInternalBrowser
+        updateTestResult()
     }
 
     override fun disposeUIResources() {

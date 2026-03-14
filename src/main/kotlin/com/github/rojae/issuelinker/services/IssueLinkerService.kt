@@ -18,9 +18,9 @@ import git4idea.repo.GitRepositoryManager
 @Service(Service.Level.PROJECT)
 class IssueLinkerService(private val project: Project) : Disposable {
 
-    private var currentIssueKey: String? = null
-    private var currentCapturedGroups: List<String>? = null
-    private var currentBranchName: String? = null
+    @Volatile private var currentIssueKey: String? = null
+    @Volatile private var currentCapturedGroups: List<String>? = null
+    @Volatile private var currentBranchName: String? = null
 
     val issueKey: String?
         get() = currentIssueKey
@@ -57,8 +57,6 @@ class IssueLinkerService(private val project: Project) : Disposable {
                 newIssueKey?.let { key ->
                     RecentIssuesService.getInstance(project).addIssueKey(key)
                 }
-            } else {
-                currentIssueKey = newIssueKey
             }
             currentCapturedGroups = capturedGroups
         } else {
@@ -94,7 +92,11 @@ class IssueLinkerService(private val project: Project) : Disposable {
         val url =
             UrlBuilderUtil.buildUrl(settings.hostUrl, settings.urlPathPattern, listOf(issueKey))
         if (url != null) {
-            BrowserUtil.browse(url)
+            if (settings.useInternalBrowser && JBCefApp.isSupported()) {
+                IssueBrowserToolWindowFactory.openUrl(project, url, issueKey)
+            } else {
+                BrowserUtil.browse(url)
+            }
         }
     }
 

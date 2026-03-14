@@ -17,24 +17,30 @@ data class RecentIssuesState(var entries: MutableList<RecentIssueEntry> = mutabl
 class RecentIssuesService : PersistentStateComponent<RecentIssuesState> {
     private var state = RecentIssuesState()
 
-    override fun getState(): RecentIssuesState = state
+    override fun getState(): RecentIssuesState = synchronized(state) { state }
 
     override fun loadState(state: RecentIssuesState) {
-        this.state = state
+        synchronized(this.state) { this.state = state }
     }
 
     fun addIssueKey(issueKey: String) {
-        // Remove existing entry with same key
-        state.entries.removeAll { it.issueKey == issueKey }
-        // Add at the beginning
-        state.entries.add(0, RecentIssueEntry(issueKey, System.currentTimeMillis()))
-        // Keep only last 10
-        if (state.entries.size > MAX_ENTRIES) {
-            state.entries = state.entries.take(MAX_ENTRIES).toMutableList()
+        synchronized(state) {
+            // Remove existing entry with same key
+            state.entries.removeAll { it.issueKey == issueKey }
+            // Add at the beginning
+            state.entries.add(0, RecentIssueEntry(issueKey, System.currentTimeMillis()))
+            // Keep only last 10
+            if (state.entries.size > MAX_ENTRIES) {
+                state.entries = state.entries.take(MAX_ENTRIES).toMutableList()
+            }
         }
     }
 
-    fun getRecentIssues(): List<RecentIssueEntry> = state.entries.toList()
+    fun getRecentIssues(): List<RecentIssueEntry> = synchronized(state) { state.entries.toList() }
+
+    fun removeIssueKey(issueKey: String) {
+        synchronized(state) { state.entries.removeAll { it.issueKey == issueKey } }
+    }
 
     companion object {
         const val MAX_ENTRIES = 10

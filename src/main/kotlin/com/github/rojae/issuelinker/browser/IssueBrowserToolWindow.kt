@@ -1,5 +1,6 @@
 package com.github.rojae.issuelinker.browser
 
+import com.github.rojae.issuelinker.IssueLinkerBundle
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
@@ -21,14 +22,16 @@ class IssueBrowserToolWindowFactory : ToolWindowFactory, DumbAware {
             JPanel(BorderLayout()).apply {
                 val message =
                     if (JBCefApp.isSupported()) {
-                        "Click an issue link or press Cmd+Alt+J to load issue"
+                        IssueLinkerBundle.message("browser.placeholder.supported")
                     } else {
-                        "JCEF browser is not supported in this environment"
+                        IssueLinkerBundle.message("browser.placeholder.unsupported")
                     }
                 add(JLabel(message, SwingConstants.CENTER), BorderLayout.CENTER)
             }
 
-        val content = ContentFactory.getInstance().createContent(panel, "Issue", false)
+        val content =
+            ContentFactory.getInstance()
+                .createContent(panel, IssueLinkerBundle.message("browser.tab.title"), false)
         toolWindow.contentManager.addContent(content)
     }
 

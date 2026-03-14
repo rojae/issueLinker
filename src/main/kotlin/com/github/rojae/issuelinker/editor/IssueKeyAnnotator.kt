@@ -1,5 +1,6 @@
 package com.github.rojae.issuelinker.editor
 
+import com.github.rojae.issuelinker.IssueLinkerBundle
 import com.github.rojae.issuelinker.settings.IssueLinkerSettings
 import com.github.rojae.issuelinker.util.UrlBuilderUtil
 import com.intellij.lang.annotation.AnnotationHolder
@@ -12,26 +13,28 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiPlainText
 import com.intellij.ui.JBColor
 import java.awt.Font
+import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.PatternSyntaxException
 
 class IssueKeyAnnotator : Annotator {
 
-    private var cachedRegexStr: String? = null
-    private var cachedRegex: Regex? = null
+    private data class CachedRegex(val source: String, val regex: Regex?)
+
+    private val cached = AtomicReference<CachedRegex?>(null)
 
     private fun getCompiledRegex(regexStr: String): Regex? {
-        if (regexStr != cachedRegexStr) {
-            cachedRegexStr = regexStr
-            cachedRegex =
-                try {
-                    Regex(regexStr)
-                } catch (_: PatternSyntaxException) {
-                    null
-                } catch (_: IllegalArgumentException) {
-                    null
-                }
-        }
-        return cachedRegex
+        val current = cached.get()
+        if (current != null && current.source == regexStr) return current.regex
+        val newRegex =
+            try {
+                Regex(regexStr)
+            } catch (_: PatternSyntaxException) {
+                null
+            } catch (_: IllegalArgumentException) {
+                null
+            }
+        cached.set(CachedRegex(regexStr, newRegex))
+        return newRegex
     }
 
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
@@ -77,7 +80,9 @@ class IssueKeyAnnotator : Annotator {
                     effectColor = linkColor
                 }
 
-            val message = if (url != null) "Open $issueKey" else issueKey
+            val message =
+                if (url != null) IssueLinkerBundle.message("annotator.openIssue", issueKey)
+                else issueKey
 
             holder
                 .newAnnotation(HighlightSeverity.INFORMATION, message)

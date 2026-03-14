@@ -4,13 +4,20 @@ import com.github.rojae.issuelinker.IssueLinkerBundle
 import com.github.rojae.issuelinker.services.IssueLinkerNotifier
 import com.github.rojae.issuelinker.services.IssueLinkerService
 import com.github.rojae.issuelinker.services.RecentIssuesService
+import com.github.rojae.issuelinker.settings.IssueLinkerSettings
+import com.github.rojae.issuelinker.util.UrlBuilderUtil
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.keymap.KeymapUtil
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DumbAware
@@ -32,12 +39,15 @@ import java.awt.Font
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.RenderingHints
+import java.awt.datatransfer.StringSelection
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.Box
 import javax.swing.BoxLayout
 import javax.swing.JComponent
+import javax.swing.JMenuItem
 import javax.swing.JPanel
+import javax.swing.JPopupMenu
 import javax.swing.ScrollPaneConstants
 
 class IssueLinkerToolWindowFactory : ToolWindowFactory, DumbAware {
@@ -54,7 +64,8 @@ class IssueLinkerToolWindowFactory : ToolWindowFactory, DumbAware {
     companion object {
         fun updateStripeTitle(project: Project, toolWindow: ToolWindow) {
             val service = project.getService(IssueLinkerService::class.java)
-            toolWindow.stripeTitle = service?.issueKey ?: "No Issue"
+            toolWindow.stripeTitle =
+                service?.issueKey ?: IssueLinkerBundle.message("nokey.widget.text")
         }
     }
 }
@@ -91,6 +102,9 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
             isOpaque = false
         }
 
+        // Toolbar (Feature 5)
+        add(createToolbar(), BorderLayout.NORTH)
+
         val scrollPane =
             JBScrollPane(contentPanel).apply {
                 border = JBUI.Borders.empty()
@@ -101,88 +115,162 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
         add(scrollPane, BorderLayout.CENTER)
     }
 
+    private fun createToolbar(): JComponent {
+        val actionGroup =
+            DefaultActionGroup().apply {
+                add(
+                    object :
+                        AnAction(
+                            IssueLinkerBundle.message("toolbar.refresh.text"),
+                            IssueLinkerBundle.message("toolbar.refresh.description"),
+                            AllIcons.Actions.Refresh,
+                        ) {
+                        override fun actionPerformed(e: AnActionEvent) {
+                            refreshContent()
+                        }
+
+                        override fun getActionUpdateThread() = ActionUpdateThread.BGT
+                    }
+                )
+                add(
+                    object :
+                        AnAction(
+                            IssueLinkerBundle.message("toolbar.openBrowser.text"),
+                            IssueLinkerBundle.message("toolbar.openBrowser.description"),
+                            AllIcons.General.Web,
+                        ) {
+                        override fun actionPerformed(e: AnActionEvent) {
+                            executeAction("IssueLinker.OpenIssue")
+                        }
+
+                        override fun update(e: AnActionEvent) {
+                            val service = project.getService(IssueLinkerService::class.java)
+                            e.presentation.isEnabled = service?.issueKey != null
+                        }
+
+                        override fun getActionUpdateThread() = ActionUpdateThread.BGT
+                    }
+                )
+                add(
+                    object :
+                        AnAction(
+                            IssueLinkerBundle.message("toolbar.settings.text"),
+                            IssueLinkerBundle.message("toolbar.settings.description"),
+                            AllIcons.General.Settings,
+                        ) {
+                        override fun actionPerformed(e: AnActionEvent) {
+                            ShowSettingsUtil.getInstance()
+                                .showSettingsDialog(
+                                    project,
+                                    IssueLinkerBundle.message("settings.displayName"),
+                                )
+                        }
+
+                        override fun getActionUpdateThread() = ActionUpdateThread.BGT
+                    }
+                )
+            }
+        val toolbar =
+            ActionManager.getInstance()
+                .createActionToolbar("IssueLinkerToolWindow", actionGroup, true)
+        toolbar.targetComponent = this
+        return toolbar.component
+    }
+
     private fun refreshContent() {
         contentPanel.removeAll()
 
         val service = project.getService(IssueLinkerService::class.java)
-        val issueKey = service?.issueKey
-        val branch = service?.branchName
-        val hasIssue = issueKey != null && service?.buildIssueUrl() != null
+        val issueKey = service.issueKey
+        val branch = service.branchName
+        val hasIssue = issueKey != null && service.buildIssueUrl() != null
 
         contentPanel.add(Box.createVerticalStrut(12))
 
-        // ── Issue Card ──
+        // Issue Card
         contentPanel.add(
             createCard(
                 title = issueKey ?: IssueLinkerBundle.message("nokey.toolwindow.title"),
                 subtitle =
-                    if (hasIssue) "Detected from branch"
+                    if (hasIssue) IssueLinkerBundle.message("toolwindow.issue.subtitle")
                     else IssueLinkerBundle.message("nokey.toolwindow.subtitle"),
                 hasContent = hasIssue,
                 chips =
                     listOf(
-                        ChipAction("Key", "IssueLinker.CopyIssueKey", hasIssue, "Copy issue key"),
                         ChipAction(
-                            "Link",
+                            IssueLinkerBundle.message("toolwindow.chip.key"),
+                            "IssueLinker.CopyIssueKey",
+                            hasIssue,
+                            IssueLinkerBundle.message("toolwindow.chip.copyKey"),
+                        ),
+                        ChipAction(
+                            IssueLinkerBundle.message("toolwindow.chip.link"),
                             "IssueLinker.CopyIssueLink",
                             hasIssue,
-                            "Copy issue tracker URL",
+                            IssueLinkerBundle.message("toolwindow.chip.copyIssueLink"),
                         ),
                         ChipAction(
-                            "Markdown",
+                            IssueLinkerBundle.message("toolwindow.chip.markdown"),
                             "IssueLinker.CopyAsMarkdown",
                             hasIssue,
-                            "Copy as [KEY](URL)",
+                            IssueLinkerBundle.message("toolwindow.chip.copyMarkdown"),
                         ),
                     ),
-                primaryAction = PrimaryAction("Open in Browser", "IssueLinker.OpenIssue", hasIssue),
+                primaryAction =
+                    PrimaryAction(
+                        IssueLinkerBundle.message("toolwindow.openBrowser"),
+                        "IssueLinker.OpenIssue",
+                        hasIssue,
+                    ),
             )
         )
 
         contentPanel.add(Box.createVerticalStrut(10))
 
-        // ── Branch Card ──
+        // Branch Card
         val hasBranch = branch != null
         contentPanel.add(
             createCard(
-                title = branch ?: "No Branch",
+                title = branch ?: IssueLinkerBundle.message("toolwindow.branch.title"),
                 subtitle =
-                    if (hasBranch) "Current Git branch"
-                    else "No Git repository found in this project",
+                    if (hasBranch) IssueLinkerBundle.message("toolwindow.branch.subtitle")
+                    else IssueLinkerBundle.message("toolwindow.branch.noRepo"),
                 hasContent = hasBranch,
                 chips =
                     listOf(
                         ChipAction(
-                            "Link",
+                            IssueLinkerBundle.message("toolwindow.chip.link"),
                             "IssueLinker.CopyBranchLink",
                             hasBranch,
-                            "Copy branch URL on remote",
+                            IssueLinkerBundle.message("toolwindow.chip.copyBranchUrl"),
                         ),
                         ChipAction(
-                            "Markdown",
+                            IssueLinkerBundle.message("toolwindow.chip.markdown"),
                             "IssueLinker.CopyBranchAsMarkdown",
                             hasBranch,
-                            "Copy as [branch](URL)",
+                            IssueLinkerBundle.message("toolwindow.chip.copyBranchMarkdown"),
                         ),
                     ),
                 primaryAction =
-                    PrimaryAction("Open in Browser", "IssueLinker.OpenBranchLink", hasBranch),
+                    PrimaryAction(
+                        IssueLinkerBundle.message("toolwindow.openBrowser"),
+                        "IssueLinker.OpenBranchLink",
+                        hasBranch,
+                    ),
             )
         )
 
         contentPanel.add(Box.createVerticalStrut(10))
 
-        // ── Recent Issues Section ──
+        // Recent Issues Section
         contentPanel.add(createRecentIssuesSection())
 
-        contentPanel.add(Box.createVerticalStrut(16))
-
-        // ── Footer ──
-        contentPanel.add(createFooter())
         contentPanel.add(Box.createVerticalGlue())
 
-        // Update tool window tab title
-        toolWindow.stripeTitle = issueKey ?: branch ?: "No Issue"
+        // Update tool window tab title (Feature 8)
+        toolWindow.stripeTitle =
+            issueKey ?: branch ?: IssueLinkerBundle.message("nokey.widget.text")
+        toolWindow.contentManager.contents.firstOrNull()?.displayName = issueKey ?: ""
 
         contentPanel.revalidate()
         contentPanel.repaint()
@@ -265,7 +353,12 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
                                             object : MouseAdapter() {
                                                 override fun mouseClicked(e: MouseEvent) {
                                                     ShowSettingsUtil.getInstance()
-                                                        .showSettingsDialog(project, "IssueLinker")
+                                                        .showSettingsDialog(
+                                                            project,
+                                                            IssueLinkerBundle.message(
+                                                                "settings.displayName"
+                                                            ),
+                                                        )
                                                 }
                                             }
                                         )
@@ -336,8 +429,6 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
                     }
                 add(chipLabel, BorderLayout.CENTER)
 
-                // Always show tooltip: description + shortcut when enabled, just description when
-                // disabled
                 toolTipText =
                     if (enabled && shortcutText.isNotEmpty()) "$description ($shortcutText)"
                     else description
@@ -506,55 +597,88 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
                     }
 
                     override fun mouseClicked(e: MouseEvent) {
-                        openRecentIssue(issueKey)
+                        if (e.button == MouseEvent.BUTTON1 && !e.isPopupTrigger) {
+                            openRecentIssue(issueKey)
+                        }
+                    }
+
+                    override fun mousePressed(e: MouseEvent) {
+                        if (e.isPopupTrigger) {
+                            showRecentIssueContextMenu(e.component, e.x, e.y, issueKey)
+                        }
+                    }
+
+                    override fun mouseReleased(e: MouseEvent) {
+                        if (e.isPopupTrigger) {
+                            showRecentIssueContextMenu(e.component, e.x, e.y, issueKey)
+                        }
                     }
                 }
             )
         }
     }
 
-    private fun openRecentIssue(issueKey: String) {
-        IssueLinkerService.getInstance(project).openIssueByKey(issueKey)
+    private fun showRecentIssueContextMenu(
+        component: java.awt.Component,
+        x: Int,
+        y: Int,
+        issueKey: String,
+    ) {
+        val settings = IssueLinkerSettings.getInstance()
+        val url =
+            UrlBuilderUtil.buildUrl(settings.hostUrl, settings.urlPathPattern, listOf(issueKey))
+
+        val popup = JPopupMenu()
+
+        popup.add(
+            JMenuItem(IssueLinkerBundle.message("recent.context.openBrowser")).apply {
+                addActionListener { openRecentIssue(issueKey) }
+            }
+        )
+
+        popup.add(
+            JMenuItem(IssueLinkerBundle.message("recent.context.copyKey")).apply {
+                addActionListener {
+                    CopyPasteManager.getInstance().setContents(StringSelection(issueKey))
+                }
+            }
+        )
+
+        if (url != null) {
+            popup.add(
+                JMenuItem(IssueLinkerBundle.message("recent.context.copyLink")).apply {
+                    addActionListener {
+                        CopyPasteManager.getInstance().setContents(StringSelection(url))
+                    }
+                }
+            )
+
+            popup.add(
+                JMenuItem(IssueLinkerBundle.message("recent.context.copyMarkdown")).apply {
+                    addActionListener {
+                        CopyPasteManager.getInstance()
+                            .setContents(StringSelection("[$issueKey]($url)"))
+                    }
+                }
+            )
+        }
+
+        popup.addSeparator()
+
+        popup.add(
+            JMenuItem(IssueLinkerBundle.message("recent.context.remove")).apply {
+                addActionListener {
+                    RecentIssuesService.getInstance(project).removeIssueKey(issueKey)
+                    refreshContent()
+                }
+            }
+        )
+
+        popup.show(component, x, y)
     }
 
-    private fun createFooter(): JPanel {
-        return JPanel(BorderLayout()).apply {
-            isOpaque = false
-            alignmentX = Component.LEFT_ALIGNMENT
-            maximumSize = Dimension(Int.MAX_VALUE, 32)
-            border = JBUI.Borders.empty(0, 18)
-
-            val settingsLink =
-                JBLabel("Settings").apply {
-                    foreground = JBUI.CurrentTheme.Link.Foreground.ENABLED
-                    font = font.deriveFont(12f)
-                    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-                    addMouseListener(
-                        object : MouseAdapter() {
-                            override fun mouseClicked(e: MouseEvent) {
-                                ShowSettingsUtil.getInstance()
-                                    .showSettingsDialog(project, "IssueLinker")
-                            }
-                        }
-                    )
-                }
-            add(settingsLink, BorderLayout.WEST)
-
-            val refreshLink =
-                JBLabel("Refresh").apply {
-                    foreground = JBUI.CurrentTheme.Link.Foreground.ENABLED
-                    font = font.deriveFont(12f)
-                    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-                    addMouseListener(
-                        object : MouseAdapter() {
-                            override fun mouseClicked(e: MouseEvent) {
-                                refreshContent()
-                            }
-                        }
-                    )
-                }
-            add(refreshLink, BorderLayout.EAST)
-        }
+    private fun openRecentIssue(issueKey: String) {
+        IssueLinkerService.getInstance(project).openIssueByKey(issueKey)
     }
 
     fun refresh() {
@@ -564,12 +688,15 @@ class IssueLinkerToolWindowPanel(private val project: Project, private val toolW
     private fun executeAction(actionId: String) {
         val action = ActionManager.getInstance().getAction(actionId) ?: return
         val dataContext = SimpleDataContext.builder().add(CommonDataKeys.PROJECT, project).build()
+        @Suppress("DEPRECATION")
         val event =
-            AnActionEvent.createFromAnAction(
-                action,
+            AnActionEvent(
                 null,
-                ActionPlaces.TOOLWINDOW_CONTENT,
                 dataContext,
+                ActionPlaces.TOOLWINDOW_CONTENT,
+                action.templatePresentation.clone(),
+                ActionManager.getInstance(),
+                0,
             )
         action.actionPerformed(event)
     }
