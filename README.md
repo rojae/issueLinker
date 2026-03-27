@@ -4,6 +4,9 @@
 [![Version](https://img.shields.io/jetbrains/plugin/v/30083.svg)](https://plugins.jetbrains.com/plugin/30083)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/30083.svg)](https://plugins.jetbrains.com/plugin/30083)
 [![Get from Marketplace](https://img.shields.io/badge/Get_from-JetBrains_Marketplace-blue?logo=jetbrains)](https://plugins.jetbrains.com/plugin/30083)
+[![Stars](https://img.shields.io/github/stars/rojae/issueLinker?style=social)](https://github.com/rojae/issueLinker/stargazers)
+[![Forks](https://img.shields.io/github/forks/rojae/issueLinker?style=social)](https://github.com/rojae/issueLinker/network/members)
+[![Issues](https://img.shields.io/github/issues/rojae/issueLinker)](https://github.com/rojae/issueLinker/issues)
 
 [한국어](README.ko.md)
 
@@ -26,7 +29,7 @@ Parse issue keys from branch names using configurable regex patterns and open th
 
 ## Demo
 
-<img src="docs/demo.gif" width="640" alt="IssueLinker Demo">
+![Demo](docs/images/demo.gif)
 
 ```
 Branch: feature/PROJ-123-add-user-login
@@ -212,6 +215,12 @@ Add your JetBrains Marketplace token to GitHub Secrets as `PUBLISH_TOKEN`, then:
 ```
 
 Get your token from [JetBrains Hub](https://hub.jetbrains.com/users/me?tab=authentification).
+
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=rojae/issueLinker&type=Date)](https://star-history.com/#rojae/issueLinker&Date)
+
+---
 
 ## Contributing
 
